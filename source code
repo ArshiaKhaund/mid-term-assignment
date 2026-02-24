@@ -1,0 +1,96 @@
+##Keep it spinning
+
+from machine import Pin, PWM, time_pulse_us
+import time
+import random
+import neopixel
+
+servo = PWM(Pin(18))
+servo.freq(50)
+
+trig = Pin(27, Pin.OUT)
+echo = Pin(34, Pin.IN)
+
+colours = [(150, 0, 150), (0, 150, 0), (0, 0, 150)]
+light = neopixel.NeoPixel(Pin(4), 16)
+
+soundsens = Pin(22, Pin.IN, Pin.PULL_UP)
+
+while True:
+
+    colour = random.choice(colours)
+
+    for i in range(16):
+        light[i] = colour
+    light.write()
+
+    # ---------------- PURPLE ----------------
+    if colour == (150, 0, 150):
+
+        start = time.ticks_ms()
+
+        while time.ticks_diff(time.ticks_ms(), start) < 6000:
+
+            if soundsens.value() == 0:
+                new_pos = random.randint(40, 115)
+                servo.duty(new_pos)
+                time.sleep(0.2)
+
+            time.sleep(0.05)
+
+    # ---------------- BLUE ----------------
+    elif colour == (0, 0, 150):
+
+        target = random.randint(5, 30)
+        #randomly generated target location which the player has to match to keep the bottle spinning
+        print("Target:", target)
+        
+        
+        #starts counting the time
+        start = time.ticks_ms()
+        #calculates the time difference in milliseconds until its 6 seconds
+        while time.ticks_diff(time.ticks_ms(), start) < 6000:
+            #trigger and echo function for the sensor
+            trig.off()
+            time.sleep_us(2)
+            trig.on()
+            time.sleep_us(10)
+            trig.off()
+            #minimum and maximum time for the echo to be sensed
+            duration = time_pulse_us(echo, 1, 30000)
+
+            if duration > 0:
+                distance = duration / 58
+                print("Measured:", distance)
+                counter = 0
+                #to get rid of the error distance and gets rid of the decimal values
+                if abs(distance - target) < 2:
+                    counter = 1
+                    print("MATCHED")
+                    new_pos = random.randint(40, 115)
+                    servo.duty(new_pos)
+                    break  
+            time.sleep(0.1)
+
+        if counter == 0:
+            print("You couldn't do it.. loser lol")
+            for j in range(3):
+                for z in range(16):
+                    light[z] = (150, 0, 0)
+                    light.write()
+                    time.sleep(0.5)
+
+                for z in range(16):
+                    light[z] = (0, 0, 0)
+                    light.write()
+                    time.sleep(0.5)
+
+            print("YOU LOSER HAHA")
+
+    # ---------------- GREEN ----------------
+    elif colour == (0, 150, 0):
+        print("youre safe :D dont worry")
+        time.sleep(6)
+
+    time.sleep(0.2)
+
